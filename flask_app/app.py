@@ -10,6 +10,8 @@ from nltk.corpus import stopwords
 import string
 import re
 import dagshub
+from mlflow.tracking import MlflowClient
+
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
@@ -112,17 +114,34 @@ PREDICTION_COUNT = Counter(
 
 # ------------------------------------------------------------------------------------------
 # Model and vectorizer setup
+
 model_name = "my_model"
+
 def get_latest_model_version(model_name):
-    client = mlflow.MlflowClient()
-    latest_version = client.get_latest_versions(model_name, stages=["Production"])
-    if not latest_version:
-        latest_version = client.get_latest_versions(model_name, stages=["None"])
-    return latest_version[0].version if latest_version else None
+    client = MlflowClient()
+
+    # Try to get the latest Production version
+    latest_production = client.get_latest_versions(model_name, stages=["Production"])
+    if latest_production:
+        return latest_production[0].version
+
+    # If no Production version, fetch all versions and pick the latest numerically
+    all_versions = client.search_model_versions(f"name='{model_name}'")
+    if not all_versions:
+        return None
+
+    # Get latest version by max version number
+    latest_version = max(all_versions, key=lambda v: int(v.version))
+    return latest_version.version
 
 model_version = get_latest_model_version(model_name)
-model_uri = f'models:/{model_name}/{model_version}'
+
+if model_version is None:
+    raise ValueError(f"No versions found for model '{model_name}'.")
+
+model_uri = f"models:/{model_name}/{model_version}"
 print(f"Fetching model from: {model_uri}")
+
 model = mlflow.pyfunc.load_model(model_uri)
 vectorizer = pickle.load(open('models/vectorizer.pkl', 'rb'))
 
