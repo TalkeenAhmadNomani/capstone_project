@@ -92,5 +92,5 @@ target/
 #some useful rpivate links
 cred.txt
 local_s3/
-data
+
 models/
