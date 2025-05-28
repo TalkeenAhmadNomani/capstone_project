@@ -2,17 +2,15 @@ name: CI Pipeline
 
 on: push
 
-
-
 jobs:
   project-testing:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: setup python
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
@@ -25,14 +23,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: install dependencies
+      - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          pip install dvc  # ✅ required if not in requirements.txt
 
-      - name: run pipeline
+      - name: Show DVC Diagnostics
+        run: |
+          dvc doctor
+          dvc remote list
+
+      - name: Pull DVC data (model/artifacts)
+        env:
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          dvc pull
+
+      - name: Run DVC pipeline
         env:
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           dvc repro
-
-         
