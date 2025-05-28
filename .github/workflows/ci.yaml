@@ -29,8 +29,10 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: run pipeline
+      - name: Run pipeline
         env:
-          CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
+        DAGSHUB_TOKEN: ${{ secrets.CAPSTONE_TEST }}
         run: |
-          dvc repro
+         dvc repro
+
+          
